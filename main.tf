@@ -53,6 +53,20 @@ resource "azurerm_linux_virtual_machine" "linux_example" {
   admin_password       = var.password
   disable_password_authentication = false
 
+  # Use public image if the variable is set to "public"
+  source_image_id = var.image_source == "public" ? null : var.private_image_id
+
+  # Use public image reference if using public image
+  dynamic "source_image_reference" {
+    for_each = var.image_source == "public" ? [1] : []
+    content {
+      publisher = var.publisher
+      offer     = var.offer
+      sku       = var.sku
+      version   = var.os_version
+    }
+  }
+
   # Use this for private image
   source_image_id = var.private_image_id
 
@@ -112,10 +126,26 @@ output "private_ip_address" {
   value = azurerm_network_interface.example.private_ip_address
 }
 
-output "linux_virtual_machine_id" {
-  value = azurerm_linux_virtual_machine.linux_example[0].id
+output "primary_dns_name" {
+  value = data.azurerm_public_ip.example.fqdn
 }
 
-output "windows_virtual_machine_id" {
-  value = length(azurerm_windows_virtual_machine.windows_example) > 0 ? azurerm_windows_virtual_machine.windows_example[0].id : null
+output "virtual_machine_id" {
+  value = var.os_type=="linux" ? azurerm_linux_virtual_machine.example[0].virtual_machine_id : azurerm_windows_virtual_machine.example[0].virtual_machine_id
 }
+
+output "cloud_instance_id" {
+  value = var.os_type=="linux" ? azurerm_linux_virtual_machine.example[0].id : azurerm_windows_virtual_machine.example[0].id
+}
+
+output "data_disk_name" {
+  value = azurerm_managed_disk.example.name
+}
+
+#output "linux_virtual_machine_id" {
+  #value = azurerm_linux_virtual_machine.linux_example[0].id
+#}
+
+#output "windows_virtual_machine_id" {
+  #value = length(azurerm_windows_virtual_machine.windows_example) > 0 ? azurerm_windows_virtual_machine.windows_example[0].id : null
+#}
